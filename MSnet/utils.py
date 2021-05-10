@@ -1,5 +1,7 @@
+import os
 import csv
 import mir_eval
+import random
 import pickle
 import numpy as np
 import pandas as pd
@@ -10,10 +12,15 @@ def get_split_lists():
     test_ids = []
     return train_ids, val_ids, test_ids
 
-def get_split_lists_vocal():
-    train_ids = []
-    val_ids = []
-    test_ids = []
+def get_split_lists_vocal(data_folder):
+    ids = []
+    for mix_path in os.listdir(os.path.join(data_folder, 'audio')):
+        if '.wav' in mix_path:
+            ids.append(mix_path.split('_')[-1].replace('.wav', ''))
+    
+    train_ids = random.sample(ids, int(len(ids)*0.65))
+    val_ids = random.sample(ids, int(len(ids)*0.20))
+    test_ids = random.sample(ids, int(len(ids)*0.15))
     return train_ids, val_ids, test_ids
 
 def melody_eval(ref, est):

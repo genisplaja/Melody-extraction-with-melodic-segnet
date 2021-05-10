@@ -69,7 +69,7 @@ def batchize_val(data, size=430):
 
 def main(data_folder, model_type, output_folder):  
     if 'vocal' in model_type:
-        train_ids, val_ids, test_ids = get_split_lists_vocal()
+        train_ids, val_ids, test_ids = get_split_lists_vocal(data_folder)
         xlist = []
         ylist = []
         for chunk_id in train_ids:
@@ -150,14 +150,14 @@ def parser():
     p = argparse.ArgumentParser()
 
     p.add_argument('-df', '--data_folder',
-                    help='Path to the dataset folder (default: %(default)s',
-                    type=str, default='./data/MedleyDB/Source/')
+                   help='Path to the dataset folder (default: %(default)s',
+                   type=str, default='./data/MedleyDB/Source/')
     p.add_argument('-t', '--model_type',
-                    help='Model type: vocal or melody (default: %(default)s',
-                    type=str, default='vocal')
+                   help='Model type: vocal or melody (default: %(default)s',
+                   type=str, default='vocal')
     p.add_argument('-o', '--output_folder',
-                    help='Path to output foler (default: %(default)s',
-                    type=str, default='./data/')
+                   help='Path to output foler (default: %(default)s',
+                   type=str, default='./data/')
     return p.parse_args()
 
 

@@ -1,5 +1,5 @@
-
-import os, time
+import os
+import time
 import numpy as np
 
 import torch
@@ -49,13 +49,13 @@ def est(output, CenFreq, time_arr):
 
 def melody_eval(ref, est):
 
-    ref_time = ref[:,0]
-    ref_freq = ref[:,1]
+    ref_time = ref[:, 0]
+    ref_freq = ref[:, 1]
 
-    est_time = est[:,0]
-    est_freq = est[:,1]
+    est_time = est[:, 0]
+    est_freq = est[:, 1]
 
-    output_eval = mir_eval.melody.evaluate(ref_time,ref_freq,est_time,est_freq)
+    output_eval = mir_eval.melody.evaluate(ref_time, ref_freq, est_time, est_freq)
     VR = output_eval['Voicing Recall']*100.0 
     VFA = output_eval['Voicing False Alarm']*100.0
     RPA = output_eval['Raw Pitch Accuracy']*100.0
@@ -67,21 +67,22 @@ def melody_eval(ref, est):
 def pos_weight(data):
     frames = data.shape[-1]
     freq_len = data.shape[-2]
-    non_vocal = np.sum(data[:,0,:]) * 1.0
+    non_vocal = np.sum(data[:, 0, :]) * 1.0
     vocal = (len(data) * frames) - non_vocal
     z = np.zeros((freq_len, frames))
-    z[1:,:] += (non_vocal / vocal)
-    z[0,:] += vocal / non_vocal
+    z[1:, :] += (non_vocal / vocal)
+    z[0, :] += vocal / non_vocal
     return torch.from_numpy(z).float()
 
 def iseg(data):
     print(data.shape)
     new_length = data.shape[0] * data.shape[-1]
-    new_data = np.zeros((1,1,data.shape[2],new_length))
+    new_data = np.zeros((1, 1, data.shape[2], new_length))
     print(new_data.shape)
     for i in range(len(data)):
-        new_data[0,0,:,i*data.shape[-1]:(i+1)*data.shape[-1]] = data[i]
+        new_data[0, 0, :, i*data.shape[-1]:(i+1)*data.shape[-1]] = data[i]
     return new_data
+
 def train(fp, model_type, gid, op, epoch_num, learn_rate, bs):
     if 'vocal' in model_type:
         Net = MSnet_vocal()
@@ -98,12 +99,12 @@ def train(fp, model_type, gid, op, epoch_num, learn_rate, bs):
     epoch_num = 10000
     bs = 50
     learn_rate = 0.0001
+    
     """
     Loading training data:
         training data shape should be x: (n, 3, freq_bins, time_frames) extract from audio by cfp_process
                                       y: (n, 1, freq_bins+1, time_frames) from ground-truth
     """
-
     print('Loading training data ...')
     hf = h5py.File(fp+'/train.h5', 'r')
     x = hf.get('x')[:]
@@ -136,7 +137,6 @@ def train(fp, model_type, gid, op, epoch_num, learn_rate, bs):
     """
     Training
     """
-    
     best_epoch = 0
     best_OA = 0
 
@@ -154,14 +154,14 @@ def train(fp, model_type, gid, op, epoch_num, learn_rate, bs):
             opt.zero_grad()
             if gid is not None:
                 pred, _ = Net(batch_x.cuda())
-                pred = pred[:,0]
+                pred = pred[:, 0]
                 loss = BCELoss(pred, batch_y.cuda())
                 loss.backward()
                 opt.step()
                 train_loss += loss.item()
             else:
                 pred, _ = Net(batch_x)
-                pred = pred[:,0]
+                pred = pred[:, 0]
                 loss = BCELoss(pred, batch_y)
                 loss.backward()
                 opt.step()
@@ -199,39 +199,39 @@ def train(fp, model_type, gid, op, epoch_num, learn_rate, bs):
         if avg_eval_arr[-1] > best_OA:
             best_OA = avg_eval_arr[-1]
             best_epoch = epoch
-            torch.save(Net.state_dict(), op+'/model_'+model_type) 
+            torch.save(Net.state_dict(), op+'/model_' + model_type)
         
         print('Best Epoch: ', best_epoch, ' | Best OA: %.2f'%best_OA)
         print('Time: ', int(time.time()-start_time), '(s)')
 
 def parser():
-    
     p = argparse.ArgumentParser()
 
     p.add_argument('-fp', '--filepath',
-                    help='Path to input training data (h5py file) and validation data (pickle file) (default: %(default)s)',
-                    type=str, default='./data/')
+                   help='Path to input training data (h5py file) and validation data (pickle file) (default: %(default)s)',
+                   type=str, default='./data/')
     p.add_argument('-t', '--model_type',
-                    help='Model type: vocal or melody (default: %(default)s)',
-                    type=str, default='vocal')
+                   help='Model type: vocal or melody (default: %(default)s)',
+                   type=str, default='vocal')
     p.add_argument('-gpu', '--gpu_index',
-                    help='Assign a gpu index for processing. It will run with cpu if None.  (default: %(default)s)',
-                    type=int, default=0)
+                   help='Assign a gpu index for processing. It will run with cpu if None.  (default: %(default)s)',
+                   type=int, default=0)
     p.add_argument('-o', '--output_dir',
-                    help='Path to output folder (default: %(default)s)',
-                    type=str, default='./train/model/')
+                   help='Path to output folder (default: %(default)s)',
+                   type=str, default='./train/model/')
     p.add_argument('-ep', '--epoch_num', 
-                    help='the number of epoch (default: %(default)s)',
-                    type=int, default=100)
+                   help='the number of epoch (default: %(default)s)',
+                   type=int, default=100)
     p.add_argument('-lr', '--learn_rate', 
-                    help='the number of learn rate (default: %(default)s)',
-                    type=float, default=0.0001)
+                   help='the number of learn rate (default: %(default)s)',
+                   type=float, default=0.0001)
     p.add_argument('-bs', '--batch_size', 
-                    help='The number of batch size (default: %(default)s)',
-                    type=int, default=50)
+                   help='The number of batch size (default: %(default)s)',
+                   type=int, default=50)
     return p.parse_args()
-if __name__ == '__main__':
 
+
+if __name__ == '__main__':
     args = parser()
     if args.gpu_index is not None:
         with torch.cuda.device(args.gpu_index):
