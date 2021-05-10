@@ -40,15 +40,18 @@ midi2hz(midi)
 hz2midi(hz)
 
 """
+import os
 import soundfile as sf
 import numpy as np
 np.seterr(divide='ignore', invalid='ignore')
 import scipy
 import scipy.signal
+import tempfile
 import pandas as pd
+from pydub import AudioSegment
 
 
-def STFT(x, fr, fs, Hop, h):        
+def STFT(x, fr, fs, Hop, h):
     t = np.arange(Hop, np.ceil(len(x)/float(Hop))*Hop, Hop)
     N = int(fs/float(fr))
     window_size = len(h)
@@ -58,11 +61,11 @@ def STFT(x, fr, fs, Hop, h):
         
     for icol in range(0, len(t)):
         ti = int(t[icol])           
-        tau = np.arange(int(-min([round(N/2.0)-1, Lh, ti-1])), \
+        tau = np.arange(int(-min([round(N/2.0)-1, Lh, ti-1])),
                         int(min([round(N/2.0)-1, Lh, len(x)-ti])))
         indices = np.mod(N + tau, N) + 1                                             
         tfr[indices-1, icol] = x[ti+tau-1] * h[Lh+tau-1] \
-                                /np.linalg.norm(h[Lh+tau-1])           
+                                / np.linalg.norm(h[Lh+tau-1])
                             
     tfr = abs(scipy.fftpack.fft(tfr, n=N, axis=0))  
     return tfr, f, t, N
@@ -175,11 +178,7 @@ def CFP_filterbank(x, fr, fs, Hop, h, fc, tc, g, NumPerOctave):
     return tfrL0, tfrLF, tfrLQ, f, q, t, central_frequencies 
 
 def load_audio(filepath, sr=None, mono=True, dtype='float32'):
-
     if '.mp3' in filepath:
-        from pydub import AudioSegment
-        import tempfile
-        import os
         mp3 = AudioSegment.from_mp3(filepath)
         _, path = tempfile.mkstemp()
         mp3.export(path, format="wav")
@@ -189,8 +188,8 @@ def load_audio(filepath, sr=None, mono=True, dtype='float32'):
     else:
         x, fs = sf.read(filepath)
 
-    if mono and len(x.shape)>1:
-        x = np.mean(x, axis = 1)
+    if mono and len(x.shape) > 1:
+        x = np.mean(x, axis=1)
     if sr:
         x = scipy.signal.resample_poly(x, sr, fs)
         fs = sr 
@@ -198,12 +197,10 @@ def load_audio(filepath, sr=None, mono=True, dtype='float32'):
 
     return x, fs
 
-
 def feature_extraction(x, fs, Hop=512, Window=2049, StartFreq=80.0, StopFreq=1000.0, NumPerOct=48):
-    
     fr = 2.0 # frequency resolution    
-    h = scipy.signal.blackmanharris(Window) # window size
-    g = np.array([0.24, 0.6, 1]) # gamma value
+    h = scipy.signal.blackmanharris(Window)  # window size
+    g = np.array([0.24, 0.6, 1])  # gamma value
 
     tfrL0, tfrLF, tfrLQ, f, q, t, CenFreq = CFP_filterbank(x, fr, fs, Hop, h, StartFreq, 1/StopFreq, g, NumPerOct)
     Z = tfrLF * tfrLQ
@@ -214,7 +211,7 @@ def feature_extraction(x, fs, Hop=512, Window=2049, StartFreq=80.0, StopFreq=100
 def midi2hz(midi):
     return 2**((midi-69)/12.0)*440
 def hz2midi(hz):
-    return 69+ 12*np.log2(hz/440.0)
+    return 69 + 12*np.log2(hz/440.0)
     
 def get_CenFreq(StartFreq=80, StopFreq=1000, NumPerOct=48):
     Nest = int(np.ceil(np.log2(StopFreq/StartFreq))*NumPerOct)
@@ -232,26 +229,28 @@ def get_time(fs, Hop, end):
 
 def lognorm(x):
     return np.log(1+x)
+
 def norm(x):
     return (x - np.min(x))/(np.max(x)-np.min(x))
-def cfp_process(fpath, ypath=None, csv=False,sr=None, hop=256, model_type='vocal'):
-    print('CFP process in '+str(fpath)+ ' ... (It may take some times)')
+
+def cfp_process(fpath, ypath=None, csv=False, sr=None, hop=256, model_type='vocal'):
+    print('CFP process in '+str(fpath) + ' ... (It may take some times)')
     y, sr = load_audio(fpath, sr=sr)
     if 'vocal' in model_type:
         Z, time, CenFreq, tfrL0, tfrLF, tfrLQ = feature_extraction(y, sr, Hop=hop, StartFreq=31.0, StopFreq=1250.0, NumPerOct=60)
     if 'melody' in model_type:
         Z, time, CenFreq, tfrL0, tfrLF, tfrLQ = feature_extraction(y, sr, Hop=hop, StartFreq=20.0, StopFreq=2048.0, NumPerOct=60)
-    tfrL0 = norm(lognorm(tfrL0))[np.newaxis,:,:]
-    tfrLF = norm(lognorm(tfrLF))[np.newaxis,:,:]
-    tfrLQ = norm(lognorm(tfrLQ))[np.newaxis,:,:]
-    W = np.concatenate((tfrL0,tfrLF,tfrLQ),axis=0)
+    tfrL0 = norm(lognorm(tfrL0))[np.newaxis, :, :]
+    tfrLF = norm(lognorm(tfrLF))[np.newaxis, :, :]
+    tfrLQ = norm(lognorm(tfrLQ))[np.newaxis, :, :]
+    W = np.concatenate((tfrL0, tfrLF, tfrLQ), axis=0)
     print('Done!')
     print('Data shape: '+str(W.shape))
     if ypath:
         if csv:
-            ycsv = pd.read_csv(ypath, names = ["time", "freq"])
+            ycsv = pd.read_csv(ypath, names=["time", "freq"])
             gt0 = ycsv['time'].values
-            gt0 = gt0[1:,np.newaxis]
+            gt0 = gt0[1:, np.newaxis]
 
             gt1 = ycsv['freq'].values
             gt1 = gt1[1:,np.newaxis]

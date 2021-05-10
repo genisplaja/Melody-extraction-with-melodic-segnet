@@ -5,21 +5,18 @@ import csv
 import argparse
 import pandas as pd
 import numpy as np
-from MSnet.utils import getlist_ADC2004, getlist_MIREX05, getlist_mdb, getlist_mdb_vocal, melody_eval, select_vocal_track, csv2ref
+from MSnet.utils import get_split_lists, get_split_lists_vocal, melody_eval, select_vocal_track, csv2ref
 from MSnet.MelodyExtraction import MeExt
+
 
 def main(data_dir, model_type, output_dir, gpu_index, dataset='Mdb_vocal'):
     model_path = './MSnet/pretrain_model/MSnet_'+str(model_type)
-    if 'ADC2004' in dataset:
-        songlist = getlist_ADC2004()
-    elif 'MIREX05' in dataset:
-        songlist = getlist_MIREX05()
-    elif 'Mdb_vocal' in dataset:
-        _, _, songlist = getlist_mdb_vocal()
+    if 'Mdb_vocal' in dataset:
+        _, _, songlist = get_split_lists_vocal()
     elif 'Mdb_melody2' in dataset:
-        _, _, songlist = getlist_mdb()
+        _, _, songlist = get_split_lists()
     else:
-        print('Error: Wrong type of dataset, Must be ADC2004 or MIREX05 or Mdb_vocal or Mdb_melody2')
+        print('Error: Wrong type of dataset, Must be Mdb_vocal or Mdb_melody2')
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -27,7 +24,7 @@ def main(data_dir, model_type, output_dir, gpu_index, dataset='Mdb_vocal'):
     with open(output_dir+'/'+str(dataset)+'_result.csv', 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(['Songname', 'VR', 'VFA', 'RPA', 'RCA', 'OA'])
-        avg_arr = [0,0,0,0,0]
+        avg_arr = [0, 0, 0, 0, 0]
         for songname in songlist:
             if 'Mdb_vocal' in dataset:
                 filepath = data_dir+'/Audio/'+songname+'/'+songname+'_MIX.wav'
@@ -39,9 +36,7 @@ def main(data_dir, model_type, output_dir, gpu_index, dataset='Mdb_vocal'):
                 ypath = data_dir+'/Annotations/Melody_Annotations/MELODY2/'+songname+'_MELODY2.csv'
                 ref_arr = csv2ref(ypath)
             else:
-                filepath = data_dir+'/'+songname+'.wav'
-                ypath = data_dir+'/'+songname+'REF.txt'
-                ref_arr = np.loadtxt(ypath)
+                print('No add dataset')
                
             if gpu_index is not None:
                 with torch.cuda.device(gpu_index):
@@ -55,8 +50,8 @@ def main(data_dir, model_type, output_dir, gpu_index, dataset='Mdb_vocal'):
             writer.writerow([songname, eval_arr[0], eval_arr[1], eval_arr[2], eval_arr[3], eval_arr[4]])
         avg_arr /= len(songlist)
         writer.writerow(['Avg', avg_arr[0], avg_arr[1], avg_arr[2], avg_arr[3], avg_arr[4]])
+        
 def parser():
-    
     p = argparse.ArgumentParser()
 
     p.add_argument('-dd', '--data_dir',
@@ -71,10 +66,12 @@ def parser():
     p.add_argument('-o', '--output_dir',
                     help='Path to output foler (default: %(default)s',
                     type=str, default='./output/')
-    p.add_argument('-ds', '--dataset' ,
-                    help='Dataset for evaluate: Must be ADC2004 or MIREX05 or Mdb_vocal or Mdb_melody2 (default: %(default)s',
+    p.add_argument('-ds', '--dataset',
+                    help='Dataset for evaluate: Must be Mdb_vocal or Mdb_melody2 (default: %(default)s',
                     type=str, default='Mdb_vocal')
     return p.parse_args()
+
+
 if __name__ == '__main__':
     args = parser()
     main(args.data_dir, args.model_type, args.output_dir, args.gpu_index, args.dataset)

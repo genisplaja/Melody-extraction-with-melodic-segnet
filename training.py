@@ -32,7 +32,7 @@ def est(output, CenFreq, time_arr):
     
     CenFreq[0] = 0
     est_time = time_arr
-    output = output[0,0,:,:]
+    output = output[0, 0, :, :]
     est_freq = np.argmax(output, axis=0)
 
     for j in range(len(est_freq)):
@@ -43,8 +43,7 @@ def est(output, CenFreq, time_arr):
         est_freq = est_freq[:new_length]
         est_time = est_time[:new_length]
 
-        
-    est_arr = np.concatenate((est_time[:,None],est_freq[:,None]),axis=1)
+    est_arr = np.concatenate((est_time[:, None], est_freq[:, None]), axis=1)
 
     return est_arr
 
@@ -167,10 +166,9 @@ def train(fp, model_type, gid, op, epoch_num, learn_rate, bs):
                 loss.backward()
                 opt.step()
                 train_loss += loss.item()
-            
-
+        
         Net.eval()
-        avg_eval_arr = np.array([0,0,0,0,0],dtype='float64')
+        avg_eval_arr = np.array([0, 0, 0, 0, 0], dtype='float64')
         with torch.no_grad():
             for i in range(len(x_test_list)):
                 x_test = x_test_list[i]
@@ -194,7 +192,7 @@ def train(fp, model_type, gid, op, epoch_num, learn_rate, bs):
 
         avg_eval_arr /= len(x_test_list)
         print('=========================')
-        print('Epoch: ',epoch,' | train_loss: %.4f'% train_loss)
+        print('Epoch: ', epoch, ' | train_loss: %.4f' % train_loss)
         print('Valid | VR: {:.2f}% VFA: {:.2f}% RPA: {:.2f}% RCA: {:.2f}% OA: {:.2f}%'.format(
             avg_eval_arr[0], avg_eval_arr[1], avg_eval_arr[2], avg_eval_arr[3], avg_eval_arr[4]))
         

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 class MSnet_melody(nn.Module):
     def __init__(self):
         super(MSnet_melody, self).__init__()
@@ -65,6 +66,7 @@ class MSnet_melody(nn.Module):
         output = self.softmax(torch.cat((bm, u1), dim=2))
 
         return output, bm
+    
 class MSnet_vocal(nn.Module):
     def __init__(self):
         super(MSnet_vocal, self).__init__()

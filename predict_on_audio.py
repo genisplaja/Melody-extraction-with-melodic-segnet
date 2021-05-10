@@ -3,9 +3,11 @@ import argparse
 import numpy as np
 from MSnet.MelodyExtraction import MeExt
 import os
+
+
 def main(filepath, model_type, output_dir, gpu_index, evaluate, mode):
     songname = filepath.split('/')[-1].split('.')[0]
-    model_path = './MSnet/pretrain_model/MSnet_'+str(model_type)
+    model_path = './MSnet/pretrain_model/MSnet_' + str(model_type)
 
     if gpu_index is not None:
         with torch.cuda.device(gpu_index):
@@ -17,6 +19,7 @@ def main(filepath, model_type, output_dir, gpu_index, evaluate, mode):
         os.makedirs(output_dir)
     print('Save the result in '+output_dir+'/'+songname+'.txt')
     np.savetxt(output_dir+'/'+songname+'.txt', est_arr)
+    
     if evaluate is not None:
         import pandas as pd
         from MSnet.utils import melody_eval
@@ -32,9 +35,11 @@ def main(filepath, model_type, output_dir, gpu_index, evaluate, mode):
             return None
         eval_arr = melody_eval(ref_arr, est_arr)
         print(songname, ' | VR: {:.2f}% VFA: {:.2f}% RPA: {:.2f}% RCA: {:.2f}% OA: {:.2f}%'.format(
-        eval_arr[0], eval_arr[1], eval_arr[2], eval_arr[3], eval_arr[4]))
+              eval_arr[0], eval_arr[1], eval_arr[2], eval_arr[3], eval_arr[4])
+        )
+        
+        
 def parser():
-    
     p = argparse.ArgumentParser()
 
     p.add_argument('-fp', '--filepath',
@@ -56,6 +61,8 @@ def parser():
                     help='The mode of CFP: std and fast (default: %(default)s',
                     type=str, default='std')
     return p.parse_args()
+
+
 if __name__ == '__main__':
     args = parser()
     main(args.filepath, args.model_type, args.output_dir, args.gpu_index, args.evaluate, args.mode)
