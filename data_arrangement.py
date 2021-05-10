@@ -21,8 +21,8 @@ def seq2map(seq, CenFreq):
 def batchize(data, gt, xlist, ylist, size=430):
     if data.shape[-1] != gt.shape[-1]:
         new_length = min(data.shape[-1], gt.shape[-1])
-        data = data[:,:,:new_length]
-        gt = gt[:,:new_length]
+        data = data[:, :, :new_length]
+        gt = gt[:, :new_length]
     num = int(gt.shape[-1]/size)
     if gt.shape[-1] % size != 0:
         num += 1
@@ -34,8 +34,8 @@ def batchize(data, gt, xlist, ylist, size=430):
             tmp_x = data[:, :, i*size:]
             tmp_y = gt[:, i*size:]
             
-            batch_x[:,:,:tmp_x.shape[-1]] += tmp_x
-            batch_y[:,:tmp_y.shape[-1]] += tmp_y
+            batch_x[:, :, :tmp_x.shape[-1]] += tmp_x
+            batch_y[:, :tmp_y.shape[-1]] += tmp_y
             xlist.append(batch_x)
             ylist.append(batch_y)
             break

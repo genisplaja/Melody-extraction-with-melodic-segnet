@@ -29,7 +29,6 @@ class Dataset(Data.Dataset):
         return self.data_tensor.size(0)
 
 def est(output, CenFreq, time_arr):
-    
     CenFreq[0] = 0
     est_time = time_arr
     output = output[0, 0, :, :]
@@ -48,7 +47,6 @@ def est(output, CenFreq, time_arr):
     return est_arr
 
 def melody_eval(ref, est):
-
     ref_time = ref[:, 0]
     ref_freq = ref[:, 1]
 

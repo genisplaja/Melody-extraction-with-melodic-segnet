@@ -43,12 +43,14 @@ hz2midi(hz)
 import os
 import soundfile as sf
 import numpy as np
-np.seterr(divide='ignore', invalid='ignore')
 import scipy
 import scipy.signal
+import scipy.fftpack
 import tempfile
 import pandas as pd
 from pydub import AudioSegment
+
+np.seterr(divide='ignore', invalid='ignore')
 
 
 def STFT(x, fr, fs, Hop, h):
@@ -67,12 +69,12 @@ def STFT(x, fr, fs, Hop, h):
         tfr[indices-1, icol] = x[ti+tau-1] * h[Lh+tau-1] \
                                 / np.linalg.norm(h[Lh+tau-1])
                             
-    tfr = abs(scipy.fftpack.fft(tfr, n=N, axis=0))  
+    tfr = abs(scipy.fftpack.fft(tfr, n=N, axis=0))
     return tfr, f, t, N
 
 def nonlinear_func(X, g, cutoff):
     cutoff = int(cutoff)
-    if g!=0:
+    if g != 0:
         X[X<0] = 0
         X[:cutoff, :] = 0
         X[-cutoff:, :] = 0
@@ -143,7 +145,7 @@ def CFP_filterbank(x, fr, fs, Hop, h, fc, tc, g, NumPerOctave):
 
     [tfr, f, t, N] = STFT(x, fr, fs, Hop, h)
     tfr = np.power(abs(tfr), g[0])
-    tfr0 = tfr # original STFT
+    tfr0 = tfr  # original STFT
     ceps = np.zeros(tfr.shape)
 
     if NumofLayer >= 2:
@@ -157,19 +159,19 @@ def CFP_filterbank(x, fr, fs, Hop, h, fc, tc, g, NumPerOctave):
                 tfr = np.real(np.fft.fft(ceps, axis=0))/np.sqrt(N)
                 tfr = nonlinear_func(tfr, g[gc], fc_idx)
 
-    tfr0 = tfr0[:int(round(N/2)),:]
-    tfr = tfr[:int(round(N/2)),:]
-    ceps = ceps[:int(round(N/2)),:]
+    tfr0 = tfr0[:int(round(N/2)), :]
+    tfr = tfr[:int(round(N/2)), :]
+    ceps = ceps[:int(round(N/2)), :]
 
     HighFreqIdx = int(round((1/tc)/fr)+1)
     f = f[:HighFreqIdx]
-    tfr0 = tfr0[:HighFreqIdx,:]
-    tfr = tfr[:HighFreqIdx,:]
+    tfr0 = tfr0[:HighFreqIdx, :]
+    tfr = tfr[:HighFreqIdx, :]
     HighQuefIdx = int(round(fs/fc)+1)
     
     q = np.arange(HighQuefIdx)/float(fs)
     
-    ceps = ceps[:HighQuefIdx,:]
+    ceps = ceps[:HighQuefIdx, :]
     
     tfrL0, central_frequencies = Freq2LogFreqMapping(tfr0, f, fr, fc, tc, NumPerOctave)
     tfrLF, central_frequencies = Freq2LogFreqMapping(tfr, f, fr, fc, tc, NumPerOctave)
@@ -198,7 +200,7 @@ def load_audio(filepath, sr=None, mono=True, dtype='float32'):
     return x, fs
 
 def feature_extraction(x, fs, Hop=512, Window=2049, StartFreq=80.0, StopFreq=1000.0, NumPerOct=48):
-    fr = 2.0 # frequency resolution    
+    fr = 2.0  # frequency resolution
     h = scipy.signal.blackmanharris(Window)  # window size
     g = np.array([0.24, 0.6, 1])  # gamma value
 
@@ -206,12 +208,6 @@ def feature_extraction(x, fs, Hop=512, Window=2049, StartFreq=80.0, StopFreq=100
     Z = tfrLF * tfrLQ
     time = t/fs
     return Z, time, CenFreq, tfrL0, tfrLF, tfrLQ
-
-
-def midi2hz(midi):
-    return 2**((midi-69)/12.0)*440
-def hz2midi(hz):
-    return 69 + 12*np.log2(hz/440.0)
     
 def get_CenFreq(StartFreq=80, StopFreq=1000, NumPerOct=48):
     Nest = int(np.ceil(np.log2(StopFreq/StartFreq))*NumPerOct)
@@ -225,13 +221,19 @@ def get_CenFreq(StartFreq=80, StopFreq=1000, NumPerOct=48):
     return central_freq
 
 def get_time(fs, Hop, end):
-    return np.arange(Hop/fs,end,Hop/fs)
+    return np.arange(Hop/fs, end, Hop/fs)
 
 def lognorm(x):
     return np.log(1+x)
 
 def norm(x):
     return (x - np.min(x))/(np.max(x)-np.min(x))
+
+def midi2hz(midi):
+    return 2**((midi-69)/12.0)*440
+
+def hz2midi(hz):
+    return 69 + 12*np.log2(hz/440.0)
 
 def cfp_process(fpath, ypath=None, csv=False, sr=None, hop=256, model_type='vocal'):
     print('CFP process in '+str(fpath) + ' ... (It may take some times)')
@@ -245,7 +247,7 @@ def cfp_process(fpath, ypath=None, csv=False, sr=None, hop=256, model_type='voca
     tfrLQ = norm(lognorm(tfrLQ))[np.newaxis, :, :]
     W = np.concatenate((tfrL0, tfrLF, tfrLQ), axis=0)
     print('Done!')
-    print('Data shape: '+str(W.shape))
+    print('Data shape: ' + str(W.shape))
     if ypath:
         if csv:
             ycsv = pd.read_csv(ypath, names=["time", "freq"])
@@ -260,5 +262,3 @@ def cfp_process(fpath, ypath=None, csv=False, sr=None, hop=256, model_type='voca
         return W, gt, CenFreq, time
     else:
         return W, CenFreq, time
-
-

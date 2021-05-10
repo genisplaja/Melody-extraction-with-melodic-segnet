@@ -68,7 +68,7 @@ def select_vocal_track(ypath, lpath):
         et = float(line.split(',')[1])
         sid = line.split(',')[2]
         for i in range(len(gt1)):
-            if st < gt0[i,0] < et and 'singer' in sid:
+            if st < gt0[i, 0] < et and 'singer' in sid:
                 z[i, 0] = gt1[i, 0]
 
     gt = np.concatenate((gt0, z), axis=1)
